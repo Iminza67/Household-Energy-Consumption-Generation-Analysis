@@ -13,7 +13,22 @@ df = pd.read_csv("data/residential3_cleaned.csv")
 
 df['utc_timestamp'] = pd.to_datetime(df['utc_timestamp'])
 df = df.sort_values("utc_timestamp")
+
 df.set_index("utc_timestamp", inplace=True)
+def get_season(month):
+    if month in [12, 1, 2]:
+        return "Winter"
+    elif month in [3, 4, 5]:
+        return "Spring"
+    elif month in [6, 7, 8]:
+        return "Summer"
+    else:
+        return "Autumn"
+
+df["season"] = df.index.month.map(get_season)
+
+
+df = pd.get_dummies(df, columns=["season"], drop_first=True)
 
 # ==============================
 # FEATURE ENGINEERING
@@ -34,6 +49,8 @@ df = df.dropna()
 # FEATURES & TARGET
 # ==============================
 
+season_cols = [col for col in df.columns if col.startswith("season_")]
+
 features = [
     "lag_1",
     "lag_4",
@@ -42,8 +59,8 @@ features = [
     "DE_KN_residential3_pv",
     "DE_KN_residential3_washing_machine",
     "DE_KN_residential3_dishwasher",
-    "DE_KN_residential3_grid_export"
-]
+    "DE_KN_residential3_grid_export",
+]+season_cols
 
 target = "DE_KN_residential3_grid_import"
 
@@ -61,6 +78,14 @@ X_test = X.iloc[split:]
 
 y_train = y.iloc[:split]
 y_test = y.iloc[split:]
+
+
+from sklearn.preprocessing import StandardScaler
+
+scaler = StandardScaler()
+
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
 
 # ==============================
 # MODEL
